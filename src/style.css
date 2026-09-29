@@ -16,8 +16,6 @@
   /* Text drawn on top of a neon-coloured fill (filled buttons, armed undo). Dark on the
      bright dark-theme neons; flips to white on light theme's deeper accents. */
   --ink: #06070f;
-  /* Halo around a picked-up piece — white glows on the dark board, dark ink on the light one. */
-  --halo: #fff;
   --slide: 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --space: clamp(12px, 2.4dvh, 22px);
   /* The board takes the height left after the fixed sections (top 118 + trays 2×40 +
@@ -52,7 +50,6 @@
       radial-gradient(120% 80% at 90% 112%, #fce7f3 0%, transparent 52%), #f4f6fb;
     --page-solid: #ffffff;
     --ink: #ffffff; /* white text on the deeper accent fills */
-    --halo: #141830; /* dark halo shows the picked-up piece against the light board */
     color-scheme: light;
   }
   /* The turn wash is the primary turn cue — keep it legible on white (deeper + a touch stronger). */
@@ -447,6 +444,17 @@ body[data-over="true"] .cell {
   border-color: transparent;
   background: transparent;
 }
+/* ...except the winning line, which stays lit as a glowing ring in the winner's colour so the
+   line still reads (this out-specifies the "board is a display" rule just above, which would
+   otherwise blank its outline). The three marks also blaze (see .cell--win .disc). */
+body[data-over="true"][data-turn="cyan"] .cell--win {
+  border-color: var(--cyan);
+  box-shadow: inset 0 0 0 2px var(--cyan), 0 0 22px var(--cyan-glow);
+}
+body[data-over="true"][data-turn="magenta"] .cell--win {
+  border-color: var(--mag);
+  box-shadow: inset 0 0 0 2px var(--mag), 0 0 22px var(--mag-glow);
+}
 /* Trays hide completely (visibility keeps their space, so the board never moves). */
 body[data-over="true"] .tray {
   visibility: hidden;
@@ -479,9 +487,21 @@ body[data-over="true"] .tray {
   filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 12px currentColor);
   transition: filter 200ms ease, opacity 300ms ease;
 }
-/* Picked up to move: a white halo makes the selected mark unmistakable. */
+/* Picked up to move: the mark lifts and brightens in its OWN colour. (A white halo washed
+   the mark out to a pale tile — worst in Safari; the colour + a ring on the cell read far
+   better and work on both themes.) */
 .cell--selected .disc {
-  filter: drop-shadow(0 0 2px var(--halo)) drop-shadow(0 0 7px var(--halo)) drop-shadow(0 0 16px currentColor);
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 16px currentColor);
+}
+/* A glowing ring on the picked-up cell, in the active player's colour — unmistakable. */
+body[data-turn="cyan"] .cell--selected {
+  border-color: var(--cyan);
+  box-shadow: inset 0 0 0 2px var(--cyan), 0 0 18px var(--cyan-glow);
+}
+body[data-turn="magenta"] .cell--selected {
+  border-color: var(--mag);
+  box-shadow: inset 0 0 0 2px var(--mag), 0 0 18px var(--mag-glow);
 }
 /* Winning line: the three marks blaze. */
 .cell--win .disc {
