@@ -142,7 +142,9 @@ tray-label glow alone was too weak — mockup v1 finding.)
    - Implementation note: confetti must render ABOVE everything (no dark modal backdrop
      over the confetti canvas). Mockup v2 bug: a covering modal hid both confetti and
      board — do not use a covering modal for the win screen.
-   - **Draw:** "Draw — repeated position" in the top slot, no confetti, Play again below.
+   - **Draw:** a declaration moment like a win (same layout), "DRAW" + "Position repeated
+     3 times". No confetti — a draw-specific effect instead (proposed "echo" ripple, see
+     PRD FR-U5; confirm before TT-006).
 4. **Play again:** sides swap by default; increment the round counter.
 
 ## Error & Rescue Map

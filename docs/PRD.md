@@ -92,7 +92,12 @@ Two use cases: (a) two people on one phone; (b) one person vs a beatable-but-sma
   - **Confetti** over the entire screen, on the top-most layer.
   - Implementation note: confetti canvas must sit ABOVE all UI; do NOT use a dark modal
     backdrop that covers the board (mockup v2 bug).
-  - **Draw:** "Draw — repeated position" in the top slot, no confetti, Play again below.
+  - **Draw (same layout as a win — gets its own declaration moment):** top slot "DRAW"
+    (neon, split cyan→magenta) + small "Position repeated 3 times"; board stays visible;
+    round counter + Play again at the bottom. **No confetti** — replaced by an effect that
+    fits a draw. *Proposed ("echo"): both washes glow together and 3 rings ripple out from
+    the board in alternating cyan/magenta — one per repetition. Reduced-motion: static dual
+    glow.* Effect to be confirmed by Adwitya before TT-006.
 - FR-U6. Twist onboarding: on a player's 3rd placement, a one-time cue (first game only).
 - FR-U7. `prefers-reduced-motion` ⇒ animations become instant; confetti reduced to a
   single small burst.
