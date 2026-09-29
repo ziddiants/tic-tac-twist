@@ -193,11 +193,13 @@ body[data-turn="draw"] .status--declare {
 .tray__disc {
   width: 22px;
   height: 22px;
-  transition: opacity 250ms ease, transform 250ms ease;
+  overflow: visible;
+  filter: drop-shadow(0 0 4px currentColor);
+  transition: opacity 250ms ease, transform 250ms ease, filter 250ms ease;
 }
 .tray__disc.is-spent {
-  opacity: 0.12;
-  box-shadow: none;
+  opacity: 0.16;
+  filter: none;
   transform: scale(0.8);
 }
 .tray__label {
@@ -355,43 +357,54 @@ body[data-over="true"] .tray {
   visibility: hidden;
 }
 
-/* ---- Discs ---------------------------------------------------------------------- */
+/* ---- Marks: X (cyan) · O (magenta) ---------------------------------------------- */
+/* Each piece is a tic-tac-toe mark drawn as an SVG. Colour is `currentColor` (set per side),
+   the neon look is a drop-shadow glow, and the stroke is chunky + round to echo the friendly
+   reference shapes. */
 .disc {
   display: block;
-  border-radius: 50%;
-}
-.cell .disc {
-  width: 62%;
-  aspect-ratio: 1;
-  transition: box-shadow 200ms ease, opacity 300ms ease;
 }
 .disc--cyan {
-  background: radial-gradient(circle at 35% 30%, #b8f6ff, var(--cyan) 55%, #0a8fb0);
-  box-shadow: 0 0 12px var(--cyan-glow);
+  color: var(--cyan);
 }
 .disc--magenta {
-  background: radial-gradient(circle at 35% 30%, #ffd0ea, var(--mag) 55%, #b01f73);
-  box-shadow: 0 0 12px var(--mag-glow);
+  color: var(--mag);
 }
-.cell--selected .disc--cyan {
-  box-shadow: 0 0 0 3px var(--fg), 0 0 26px 6px var(--cyan-glow);
+.disc line,
+.disc circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 15;
+  stroke-linecap: round;
 }
-.cell--selected .disc--magenta {
-  box-shadow: 0 0 0 3px var(--fg), 0 0 26px 6px var(--mag-glow);
+.cell .disc {
+  width: 66%;
+  aspect-ratio: 1;
+  overflow: visible; /* the glow spills past the viewBox */
+  filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 12px currentColor);
+  transition: filter 200ms ease, opacity 300ms ease;
 }
-.cell--win .disc--cyan {
-  box-shadow: 0 0 22px 6px var(--cyan-glow);
+/* Picked up to move: a white halo makes the selected mark unmistakable. */
+.cell--selected .disc {
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 7px #fff) drop-shadow(0 0 16px currentColor);
 }
-.cell--win .disc--magenta {
-  box-shadow: 0 0 22px 6px var(--mag-glow);
+/* Winning line: the three marks blaze. */
+.cell--win .disc {
+  filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 20px currentColor);
+}
+.cell--dim .disc {
+  opacity: 0.3;
+  filter: none;
 }
 .disc--pop {
   animation: pop 220ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
 }
+/* Move = slide the mark from its old cell (FLIP). Transform transition lives only here, so the
+   instant jump to the start offset (set before this class is added) is not itself animated. */
 .cell .disc--slide {
   position: relative;
   z-index: 1;
-  transition: transform var(--slide), box-shadow 200ms ease, opacity 300ms ease;
+  transition: transform var(--slide), filter 200ms ease, opacity 300ms ease;
 }
 
 /* Confetti sits above everything; taps pass through to the UI below. */
