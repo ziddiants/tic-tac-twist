@@ -30,6 +30,18 @@ const CONFETTI: Record<Player, readonly string[]> = {
   magenta: ["#ff4fb2", "#ff4fb2", "#ff8fcd", "#ffd6ec", "#ffffff"],
 };
 
+// Each side is a classic tic-tac-toe MARK, not just a coloured disc: cyan (first player) = X,
+// magenta = O. Chunky rounded strokes echo the friendly reference shapes; colour + neon glow
+// come from CSS (stroke = currentColor). One 0–100 viewBox, reused at board and tray sizes.
+const MARK: Record<Player, string> = {
+  cyan: '<line x1="30" y1="30" x2="70" y2="70" /><line x1="70" y1="30" x2="30" y2="70" />',
+  magenta: '<circle cx="50" cy="50" r="27" />',
+};
+/** Inline SVG for a player's mark, carrying the `disc` classes the renderer/animation use. */
+function markSvg(player: Player, extraClass = ""): string {
+  return `<svg class="disc disc--${player}${extraClass ? ` ${extraClass}` : ""}" viewBox="0 0 100 100" aria-hidden="true">${MARK[player]}</svg>`;
+}
+
 export interface View {
   render(match: MatchState, ctx: RenderCtx): void;
   /** Brief shake on a cell whose tap did nothing. */
@@ -150,11 +162,12 @@ export function mountView(
     }
 
     // Undo button: enabled only while a take-back is legal (see session.canUndo). When armed
-    // it takes the last mover's colour — note that is the opposite side to the turn wash.
+    // it takes the last mover's colour — note that is the opposite side to the turn wash. The
+    // remaining-count lives on the tray pills, so the button label stays a plain "↺ Undo"
+    // (a "· N" suffix wrapped to three lines on a narrow phone).
     undoBtn.disabled = !armed;
     if (armed && mover) undoBtn.dataset.arm = mover;
     else delete undoBtn.dataset.arm;
-    undoBtn.textContent = mover ? `↺ Undo · ${match.undosLeft[mover]}` : "↺ Undo";
 
     // Step-set count belongs to the end screen only (right above Play again).
     if (st.kind === "playing") {
@@ -168,12 +181,7 @@ export function mountView(
       const piece = board[i];
       const had = shown?.ui.game.board[i] ?? null;
       if (shown === null || piece !== had) {
-        el.replaceChildren();
-        if (piece) {
-          const disc = document.createElement("span");
-          disc.className = `disc disc--${piece}`;
-          el.append(disc);
-        }
+        el.innerHTML = piece ? markSvg(piece) : "";
       }
       el.classList.toggle("cell--selectable", selectable.has(i));
       el.classList.toggle("cell--selected", ui.selected === i);
@@ -253,7 +261,7 @@ export function mountView(
 function tray(p: Player): string {
   return `
     <section class="tray tray--${p}" aria-label="${NAME[p]} pieces">
-      <span class="tray__discs">${`<span class="tray__disc disc disc--${p}"></span>`.repeat(PIECES_PER_PLAYER)}</span>
+      <span class="tray__discs">${markSvg(p, "tray__disc").repeat(PIECES_PER_PLAYER)}</span>
       <span class="tray__label"></span>
       <span class="tray__undo"></span>
     </section>`;
