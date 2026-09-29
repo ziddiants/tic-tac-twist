@@ -224,6 +224,17 @@ body[data-turn="draw"] .status--declare {
   color: var(--muted);
   opacity: 0.5;
 }
+/* Lit while this player's take-back is the one that is actionable this instant. */
+.tray--cyan .tray__undo.is-armed {
+  color: var(--cyan);
+  border-color: rgba(45, 226, 255, 0.65);
+  box-shadow: 0 0 10px var(--cyan-glow);
+}
+.tray--magenta .tray__undo.is-armed {
+  color: var(--mag);
+  border-color: rgba(255, 79, 178, 0.65);
+  box-shadow: 0 0 10px var(--mag-glow);
+}
 
 /* ---- Board ---------------------------------------------------------------------- */
 .board-wrap {
@@ -452,6 +463,34 @@ body[data-over="true"] .tray {
 body[data-over="true"] [data-action="undo"] {
   display: none;
 }
+/* Armed Undo wears the LAST MOVER's colour — the opposite side to the turn wash — so it is
+   plain whose take-back is live. A soft highlight sweeps across it; the matching tray pill
+   lights up in the same colour. */
+[data-action="undo"] {
+  position: relative;
+  overflow: hidden;
+}
+[data-action="undo"][data-arm] {
+  border-color: transparent;
+  color: #06070f;
+}
+[data-action="undo"][data-arm="cyan"] {
+  background: var(--cyan);
+  box-shadow: 0 0 18px var(--cyan-glow);
+}
+[data-action="undo"][data-arm="magenta"] {
+  background: var(--mag);
+  box-shadow: 0 0 18px var(--mag-glow);
+}
+[data-action="undo"][data-arm]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.5) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: shimmer 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
 /* Game over: Restart is the one thing to do next — filled, glowing, gently pulsing. */
 body[data-over="true"] .btn {
   border-color: transparent;
@@ -517,6 +556,11 @@ body[data-over="true"][data-turn="draw"] .btn {
 @keyframes invite {
   50% {
     transform: scale(1.05);
+  }
+}
+@keyframes shimmer {
+  to {
+    transform: translateX(120%);
   }
 }
 @keyframes nudge {

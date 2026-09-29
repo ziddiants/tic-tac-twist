@@ -104,6 +104,11 @@ export function mountView(
     statusEl.textContent = statusText(ui);
     subEl.textContent = st.kind === "draw" ? "Position repeated 3 times" : "";
 
+    // Whose take-back is live right now: the last mover, and only while it is legal. Both
+    // the Undo button and one tray pill wear that player's colour so the pairing is obvious.
+    const mover = lastMover(match);
+    const armed = canUndo(match);
+
     for (const p of ["cyan", "magenta"] as const) {
       const left = PIECES_PER_PLAYER - pieceCount(board, p);
       const t = trays[p];
@@ -112,17 +117,21 @@ export function mountView(
       // Once the game is over the trays have nothing to say ("moving" would invite a tap).
       t.querySelector(".tray__label")!.textContent =
         st.kind !== "playing" ? "" : left > 0 ? `${left} left` : "moving";
-      // Each player's remaining undo (1 -> 0), a permanent per-player affordance while playing.
+      // Each player's remaining undo (1 -> 0); the pill lights up in their colour while
+      // their take-back is the one that is actionable this instant.
       const undosLeft = match.undosLeft[p];
       const badge = undoBadges[p];
       badge.textContent = `↺ ${undosLeft}`;
       badge.classList.toggle("is-spent", undosLeft === 0);
+      badge.classList.toggle("is-armed", armed && mover === p);
       badge.setAttribute("aria-label", `${NAME[p]} undo remaining, ${undosLeft}`);
     }
 
-    // Undo button: enabled only while a take-back is legal (see session.canUndo).
-    undoBtn.disabled = !canUndo(match);
-    const mover = lastMover(match);
+    // Undo button: enabled only while a take-back is legal (see session.canUndo). When armed
+    // it takes the last mover's colour — note that is the opposite side to the turn wash.
+    undoBtn.disabled = !armed;
+    if (armed && mover) undoBtn.dataset.arm = mover;
+    else delete undoBtn.dataset.arm;
     undoBtn.textContent = mover ? `↺ Undo · ${match.undosLeft[mover]}` : "↺ Undo";
 
     // Step-set count belongs to the end screen only (right above Restart).
