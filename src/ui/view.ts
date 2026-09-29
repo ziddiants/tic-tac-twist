@@ -13,6 +13,7 @@ import {
 } from "../engine";
 import { launchConfetti } from "./confetti";
 import { endEffect, selectableCells, targetCells, type UiState } from "./interaction";
+import { canUndo, lastMover, stepSets, type MatchState } from "./session";
 
 const NAME: Record<Player, string> = { cyan: "Cyan", magenta: "Magenta" };
 /** Confetti in the winner's colour, with lighter tints and white for sparkle. */
@@ -22,14 +23,14 @@ const CONFETTI: Record<Player, readonly string[]> = {
 };
 
 export interface View {
-  render(ui: UiState): void;
+  render(match: MatchState): void;
   /** Brief shake on a cell whose tap did nothing. */
   nudge(cell: number): void;
 }
 
 export function mountView(
   root: HTMLElement,
-  handlers: { onTap(cell: number): void; onRestart(): void },
+  handlers: { onTap(cell: number): void; onUndo(): void; onRestart(): void },
 ): View {
   root.innerHTML = `
     <div class="wash" aria-hidden="true">
@@ -51,7 +52,11 @@ export function mountView(
       </div>
       ${tray("cyan")}
       <footer class="bottom">
-        <button class="btn" type="button" data-action="restart">Restart</button>
+        <p class="stepcount" aria-live="polite"></p>
+        <div class="bottom__actions">
+          <button class="btn btn--ghost" type="button" data-action="undo">↺ Undo</button>
+          <button class="btn" type="button" data-action="restart">Restart</button>
+        </div>
       </footer>
     </main>
   `;
@@ -61,22 +66,30 @@ export function mountView(
   const subEl = root.querySelector<HTMLElement>(".status-sub")!;
   const boardEl = root.querySelector<HTMLElement>(".board")!;
   const echoEl = root.querySelector<HTMLElement>(".echo")!;
+  const stepcountEl = root.querySelector<HTMLElement>(".stepcount")!;
+  const undoBtn = root.querySelector<HTMLButtonElement>('[data-action="undo"]')!;
   const cells = [...root.querySelectorAll<HTMLButtonElement>(".cell")];
   const trays: Record<Player, HTMLElement> = {
     cyan: root.querySelector<HTMLElement>(".tray--cyan")!,
     magenta: root.querySelector<HTMLElement>(".tray--magenta")!,
+  };
+  const undoBadges: Record<Player, HTMLElement> = {
+    cyan: trays.cyan.querySelector<HTMLElement>(".tray__undo")!,
+    magenta: trays.magenta.querySelector<HTMLElement>(".tray__undo")!,
   };
 
   boardEl.addEventListener("click", (e) => {
     const cell = (e.target as HTMLElement).closest<HTMLElement>(".cell");
     if (cell) handlers.onTap(Number(cell.dataset.cell));
   });
+  undoBtn.addEventListener("click", handlers.onUndo);
   root.querySelector('[data-action="restart"]')!.addEventListener("click", handlers.onRestart);
 
-  let shown: UiState | null = null;
+  let shown: MatchState | null = null;
   let stopConfetti: (() => void) | null = null;
 
-  function render(ui: UiState): void {
+  function render(match: MatchState): void {
+    const ui = match.ui;
     const { board, turn } = ui.game;
     const st = status(ui.game);
     const line = new Set<number>(winningLine(board) ?? []);
@@ -99,11 +112,30 @@ export function mountView(
       // Once the game is over the trays have nothing to say ("moving" would invite a tap).
       t.querySelector(".tray__label")!.textContent =
         st.kind !== "playing" ? "" : left > 0 ? `${left} left` : "moving";
+      // Each player's remaining undo (1 -> 0), a permanent per-player affordance while playing.
+      const undosLeft = match.undosLeft[p];
+      const badge = undoBadges[p];
+      badge.textContent = `↺ ${undosLeft}`;
+      badge.classList.toggle("is-spent", undosLeft === 0);
+      badge.setAttribute("aria-label", `${NAME[p]} undo remaining, ${undosLeft}`);
+    }
+
+    // Undo button: enabled only while a take-back is legal (see session.canUndo).
+    undoBtn.disabled = !canUndo(match);
+    const mover = lastMover(match);
+    undoBtn.textContent = mover ? `↺ Undo · ${match.undosLeft[mover]}` : "↺ Undo";
+
+    // Step-set count belongs to the end screen only (right above Restart).
+    if (st.kind === "playing") {
+      stepcountEl.textContent = "";
+    } else {
+      const n = stepSets(ui.game);
+      stepcountEl.textContent = `${n} step set${n === 1 ? "" : "s"}`;
     }
 
     cells.forEach((el, i) => {
       const piece = board[i];
-      const had = shown?.game.board[i] ?? null;
+      const had = shown?.ui.game.board[i] ?? null;
       if (shown === null || piece !== had) {
         el.replaceChildren();
         if (piece) {
@@ -123,9 +155,9 @@ export function mountView(
       el.setAttribute("aria-label", cellLabel(i, piece, ui.selected === i, targets.has(i)));
     });
 
-    if (shown && ui.lastMove && ui.game !== shown.game) animate(ui);
+    if (shown && ui.lastMove && ui.game !== shown.ui.game) animate(ui);
 
-    const effect = endEffect(shown?.game ?? null, ui.game);
+    const effect = endEffect(shown?.ui.game ?? null, ui.game);
     if (effect === "confetti" && st.kind === "win") {
       stopConfetti = launchConfetti(CONFETTI[st.player], { reduced: reducedMotion() });
     } else if (effect === "echo") {
@@ -135,7 +167,7 @@ export function mountView(
       stopConfetti = null;
       echoEl.replaceChildren();
     }
-    shown = ui;
+    shown = match;
   }
 
   /** Pop in a placed piece; slide a moved one from its old cell (FLIP). */
@@ -186,6 +218,7 @@ function tray(p: Player): string {
     <section class="tray tray--${p}" aria-label="${NAME[p]} pieces">
       <span class="tray__discs">${`<span class="tray__disc disc disc--${p}"></span>`.repeat(PIECES_PER_PLAYER)}</span>
       <span class="tray__label"></span>
+      <span class="tray__undo"></span>
     </section>`;
 }
 
