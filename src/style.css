@@ -441,8 +441,16 @@ body[data-over="true"] .tray {
   cursor: pointer;
 }
 @media (hover: hover) {
+  /* background-COLOR, not the shorthand: the shorthand resets background-image, which would
+     blank out the gradient/filled buttons (Start, Play again) on hover. */
   .btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  /* Filled buttons keep their fill (an opaque background-image hides the overlay); brighten
+     them instead so hover still reads. */
+  .setup__start:hover,
+  body[data-over="true"] .btn:not(.btn--ghost):hover {
+    filter: brightness(1.08);
   }
 }
 .btn:active {
@@ -459,8 +467,20 @@ body[data-over="true"] .tray {
 .btn:disabled:active {
   transform: none;
 }
-/* Undo has no meaning once the game is over — only Restart remains. */
-body[data-over="true"] [data-action="undo"] {
+/* Play again replaces Restart once the game is over; Menu (back to setup) is always there. */
+[data-action="playagain"] {
+  display: none;
+}
+body[data-over="true"] [data-action="restart"] {
+  display: none;
+}
+body[data-over="true"] [data-action="playagain"] {
+  display: inline-block;
+}
+/* Undo has no meaning once the game is over; and vs-AI it's hidden entirely (hot-seat only). */
+body[data-over="true"] [data-action="undo"],
+body[data-mode="ai"] [data-action="undo"],
+body[data-mode="ai"] .tray__undo {
   display: none;
 }
 /* Armed Undo wears the LAST MOVER's colour — the opposite side to the turn wash — so it is
@@ -491,8 +511,9 @@ body[data-over="true"] [data-action="undo"] {
   animation: shimmer 2.4s ease-in-out infinite;
   pointer-events: none;
 }
-/* Game over: Restart is the one thing to do next — filled, glowing, gently pulsing. */
-body[data-over="true"] .btn {
+/* Game over: Play again is the one thing to do next — filled, glowing, gently pulsing. The
+   ghost Menu button is excluded so back-to-setup stays a quiet secondary action. */
+body[data-over="true"] .btn:not(.btn--ghost) {
   border-color: transparent;
   /* Paint the fill under the border too; otherwise a gradient repeats there and shows as a
      thin opposite-colour line at each end. */
@@ -500,15 +521,17 @@ body[data-over="true"] .btn {
   color: #06070f;
   animation: invite 1.6s ease-in-out infinite;
 }
-body[data-over="true"][data-turn="cyan"] .btn {
-  background: var(--cyan);
+body[data-over="true"][data-turn="cyan"] .btn:not(.btn--ghost) {
+  /* background-image (solid), not the colour: an opaque image hides the hover overlay so the
+     fill survives :hover (see the .btn:hover note). */
+  background-image: linear-gradient(var(--cyan), var(--cyan));
   box-shadow: 0 0 22px var(--cyan-glow);
 }
-body[data-over="true"][data-turn="magenta"] .btn {
-  background: var(--mag);
+body[data-over="true"][data-turn="magenta"] .btn:not(.btn--ghost) {
+  background-image: linear-gradient(var(--mag), var(--mag));
   box-shadow: 0 0 22px var(--mag-glow);
 }
-body[data-over="true"][data-turn="draw"] .btn {
+body[data-over="true"][data-turn="draw"] .btn:not(.btn--ghost) {
   /* background-image, not the shorthand: the shorthand would reset background-origin. */
   background-image: linear-gradient(90deg, var(--cyan), var(--mag));
   box-shadow: -8px 0 22px var(--cyan-glow), 8px 0 22px var(--mag-glow);
@@ -516,6 +539,107 @@ body[data-over="true"][data-turn="draw"] .btn {
 .btn:focus-visible {
   outline: 2px solid var(--fg);
   outline-offset: 2px;
+}
+
+/* ---- Setup screen (FR-S1) ------------------------------------------------------- */
+.setup {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3.6dvh, 30px);
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  text-align: center;
+}
+.setup__tag {
+  margin: 0;
+  max-width: 22em;
+  color: var(--muted);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+.setup__form {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 3dvh, 26px);
+  width: min(92vw, 360px);
+}
+.setup__ai {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 3dvh, 26px);
+}
+.setup__ai[hidden] {
+  display: none;
+}
+.opt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.opt__label {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.seg {
+  display: flex;
+  gap: 8px;
+}
+.seg__opt {
+  flex: 1;
+  min-height: 46px;
+  padding: 0 8px;
+  border-radius: 14px;
+  border: 1px solid var(--glass-edge);
+  background: var(--glass);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease, color 200ms ease;
+}
+@media (hover: hover) {
+  .seg__opt:not([aria-checked="true"]):hover {
+    background-color: rgba(255, 255, 255, 0.09);
+  }
+}
+.seg__opt:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+/* Selected pill: neutral highlight by default... */
+.seg__opt[aria-checked="true"] {
+  border-color: var(--fg);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px var(--fg);
+}
+/* ...but the side choice previews its own neon so you see which colour you'll play. */
+.seg__opt[data-value="cyan"][aria-checked="true"] {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  background: rgba(45, 226, 255, 0.12);
+  box-shadow: inset 0 0 0 1px var(--cyan), 0 0 14px var(--cyan-glow);
+}
+.seg__opt[data-value="magenta"][aria-checked="true"] {
+  color: var(--mag);
+  border-color: var(--mag);
+  background: rgba(255, 79, 178, 0.12);
+  box-shadow: inset 0 0 0 1px var(--mag), 0 0 14px var(--mag-glow);
+}
+/* Start: the one primary action on this screen — filled in the game's cyan→magenta. */
+.setup__start {
+  margin-top: 4px;
+  min-height: 50px;
+  border-color: transparent;
+  background-origin: border-box;
+  background-image: linear-gradient(90deg, var(--cyan), var(--mag));
+  color: #06070f;
+  box-shadow: 0 0 22px rgba(45, 226, 255, 0.28), 0 0 22px rgba(255, 79, 178, 0.28);
 }
 
 /* ---- Motion --------------------------------------------------------------------- */

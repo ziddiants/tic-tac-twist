@@ -69,6 +69,15 @@ function moved(ui: UiState, move: Move): TapResult {
   return { kind: "moved", ui: { game: applyMove(ui.game, move), selected: null, lastMove: move } };
 }
 
+/**
+ * Apply a move chosen outside the tap flow — the AI, which may return a from→to move that a
+ * single tap can't express. Same "moved" result the tap path produces, so it animates and
+ * folds into the session identically.
+ */
+export function applyChosenMove(ui: UiState, move: Move): TapResult {
+  return moved(ui, move);
+}
+
 export type EndEffect = "confetti" | "echo" | "clear" | null;
 
 /**

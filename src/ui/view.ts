@@ -14,6 +14,14 @@ import {
 import { launchConfetti } from "./confetti";
 import { endEffect, selectableCells, targetCells, type UiState } from "./interaction";
 import { canUndo, lastMover, stepSets, type MatchState } from "./session";
+import type { GameMode } from "./series";
+
+/** Extra display context for a render, beyond the live game/undo state. */
+export interface RenderCtx {
+  readonly mode: GameMode;
+  /** The side the computer plays (vs-AI), else null — drives the "thinking" label. */
+  readonly aiSide: Player | null;
+}
 
 const NAME: Record<Player, string> = { cyan: "Cyan", magenta: "Magenta" };
 /** Confetti in the winner's colour, with lighter tints and white for sparkle. */
@@ -23,14 +31,23 @@ const CONFETTI: Record<Player, readonly string[]> = {
 };
 
 export interface View {
-  render(match: MatchState): void;
+  render(match: MatchState, ctx: RenderCtx): void;
   /** Brief shake on a cell whose tap did nothing. */
   nudge(cell: number): void;
+  /** Tear down before the view is discarded: stop any confetti (its canvas lives on
+   *  document.body, so replacing the root won't remove it) and clear the echo. */
+  destroy(): void;
 }
 
 export function mountView(
   root: HTMLElement,
-  handlers: { onTap(cell: number): void; onUndo(): void; onRestart(): void },
+  handlers: {
+    onTap(cell: number): void;
+    onUndo(): void;
+    onRestart(): void;
+    onPlayAgain(): void;
+    onMenu(): void;
+  },
 ): View {
   root.innerHTML = `
     <div class="wash" aria-hidden="true">
@@ -56,6 +73,8 @@ export function mountView(
         <div class="bottom__actions">
           <button class="btn btn--ghost" type="button" data-action="undo">↺ Undo</button>
           <button class="btn" type="button" data-action="restart">Restart</button>
+          <button class="btn" type="button" data-action="playagain">Play again</button>
+          <button class="btn btn--ghost" type="button" data-action="menu">Menu</button>
         </div>
       </footer>
     </main>
@@ -84,11 +103,13 @@ export function mountView(
   });
   undoBtn.addEventListener("click", handlers.onUndo);
   root.querySelector('[data-action="restart"]')!.addEventListener("click", handlers.onRestart);
+  root.querySelector('[data-action="playagain"]')!.addEventListener("click", handlers.onPlayAgain);
+  root.querySelector('[data-action="menu"]')!.addEventListener("click", handlers.onMenu);
 
   let shown: MatchState | null = null;
   let stopConfetti: (() => void) | null = null;
 
-  function render(match: MatchState): void {
+  function render(match: MatchState, ctx: RenderCtx): void {
     const ui = match.ui;
     const { board, turn } = ui.game;
     const st = status(ui.game);
@@ -96,12 +117,13 @@ export function mountView(
     const selectable = selectableCells(ui.game);
     const targets = targetCells(ui);
 
-    // Turn wash + end state drive the page colour.
+    // Turn wash + end state drive the page colour. Mode hides undo in vs-AI (CSS).
     body.dataset.turn = st.kind === "playing" ? turn : st.kind === "win" ? st.player : "draw";
     body.dataset.over = String(st.kind !== "playing");
+    body.dataset.mode = ctx.mode;
 
     statusEl.classList.toggle("status--declare", st.kind !== "playing");
-    statusEl.textContent = statusText(ui);
+    statusEl.textContent = statusText(ui, ctx.aiSide);
     subEl.textContent = st.kind === "draw" ? "Position repeated 3 times" : "";
 
     // Whose take-back is live right now: the last mover, and only while it is legal. Both
@@ -134,7 +156,7 @@ export function mountView(
     else delete undoBtn.dataset.arm;
     undoBtn.textContent = mover ? `↺ Undo · ${match.undosLeft[mover]}` : "↺ Undo";
 
-    // Step-set count belongs to the end screen only (right above Restart).
+    // Step-set count belongs to the end screen only (right above Play again).
     if (st.kind === "playing") {
       stepcountEl.textContent = "";
     } else {
@@ -219,7 +241,13 @@ export function mountView(
     el.classList.add("cell--nudge");
   }
 
-  return { render, nudge };
+  function destroy(): void {
+    stopConfetti?.();
+    stopConfetti = null;
+    echoEl.replaceChildren();
+  }
+
+  return { render, nudge, destroy };
 }
 
 function tray(p: Player): string {
@@ -231,11 +259,13 @@ function tray(p: Player): string {
     </section>`;
 }
 
-function statusText(ui: UiState): string {
+function statusText(ui: UiState, aiSide: Player | null): string {
   const st = status(ui.game);
   if (st.kind === "win") return `${NAME[st.player]} wins`;
   if (st.kind === "draw") return "Draw";
   const p = ui.game.turn;
+  // Vs-AI: while it is the computer's move the human has nothing to do but watch.
+  if (p === aiSide) return `${NAME[p]} is thinking…`;
   if (phaseOf(ui.game.board, p) === "placement") {
     const left = PIECES_PER_PLAYER - pieceCount(ui.game.board, p);
     return `${NAME[p]} · place a piece (${left} left)`;
