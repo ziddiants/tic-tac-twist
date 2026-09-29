@@ -14,13 +14,17 @@ import {
 import { launchConfetti } from "./confetti";
 import { endEffect, selectableCells, targetCells, type UiState } from "./interaction";
 import { canUndo, lastMover, stepSets, type MatchState } from "./session";
-import type { GameMode } from "./series";
+import type { GameMode, Score } from "./series";
 
 /** Extra display context for a render, beyond the live game/undo state. */
 export interface RenderCtx {
   readonly mode: GameMode;
   /** The side the computer plays (vs-AI), else null — drives the "thinking" label. */
   readonly aiSide: Player | null;
+  /** Running series score, shown on the end screen (OQ3). */
+  readonly score: Score;
+  /** The finished game's runtime in ms (null while playing); shown on the end screen. */
+  readonly elapsedMs: number | null;
 }
 
 const NAME: Record<Player, string> = { cyan: "Cyan", magenta: "Magenta" };
@@ -46,6 +50,8 @@ export interface View {
   render(match: MatchState, ctx: RenderCtx): void;
   /** Brief shake on a cell whose tap did nothing. */
   nudge(cell: number): void;
+  /** Show the one-time twist onboarding cue (FR-U6); auto-hides after a few seconds. */
+  showCue(text: string): void;
   /** Tear down before the view is discarded: stop any confetti (its canvas lives on
    *  document.body, so replacing the root won't remove it) and clear the echo. */
   destroy(): void;
@@ -78,10 +84,11 @@ export function mountView(
         <div class="board" role="group" aria-label="Board">
           ${Array.from({ length: BOARD_SIZE }, (_, i) => `<button class="cell" type="button" data-cell="${i}"></button>`).join("")}
         </div>
+        <div class="cue" role="status" hidden></div>
       </div>
       ${tray("cyan")}
       <footer class="bottom">
-        <p class="stepcount" aria-live="polite"></p>
+        <p class="endstats" aria-live="polite"></p>
         <div class="bottom__actions">
           <button class="btn btn--ghost" type="button" data-action="undo">↺ Undo</button>
           <button class="btn" type="button" data-action="restart">Restart</button>
@@ -97,7 +104,8 @@ export function mountView(
   const subEl = root.querySelector<HTMLElement>(".status-sub")!;
   const boardEl = root.querySelector<HTMLElement>(".board")!;
   const echoEl = root.querySelector<HTMLElement>(".echo")!;
-  const stepcountEl = root.querySelector<HTMLElement>(".stepcount")!;
+  const cueEl = root.querySelector<HTMLElement>(".cue")!;
+  const endstatsEl = root.querySelector<HTMLElement>(".endstats")!;
   const undoBtn = root.querySelector<HTMLButtonElement>('[data-action="undo"]')!;
   const cells = [...root.querySelectorAll<HTMLButtonElement>(".cell")];
   const trays: Record<Player, HTMLElement> = {
@@ -169,12 +177,13 @@ export function mountView(
     if (armed && mover) undoBtn.dataset.arm = mover;
     else delete undoBtn.dataset.arm;
 
-    // Step-set count belongs to the end screen only (right above Play again).
+    // End-screen stats, all on one line so the footer stays a single caption tall (a second
+    // line pushed Play again / Menu off a short screen): score · runtime · step sets.
     if (st.kind === "playing") {
-      stepcountEl.textContent = "";
+      endstatsEl.replaceChildren();
     } else {
-      const n = stepSets(ui.game);
-      stepcountEl.textContent = `${n} step set${n === 1 ? "" : "s"}`;
+      endstatsEl.replaceChildren(...endStatNodes(ctx.score, ctx.elapsedMs, stepSets(ui.game)));
+      hideCue(); // the game is over — the onboarding cue has no place here
     }
 
     cells.forEach((el, i) => {
@@ -249,13 +258,56 @@ export function mountView(
     el.classList.add("cell--nudge");
   }
 
+  let cueTimer: number | null = null;
+  function hideCue(): void {
+    if (cueTimer !== null) {
+      clearTimeout(cueTimer);
+      cueTimer = null;
+    }
+    cueEl.hidden = true;
+    cueEl.classList.remove("cue--in");
+  }
+  function showCue(text: string): void {
+    hideCue();
+    cueEl.textContent = text;
+    cueEl.hidden = false;
+    // Force a reflow so the fade-in transition runs even on a re-shown element.
+    void cueEl.offsetWidth;
+    cueEl.classList.add("cue--in");
+    cueTimer = window.setTimeout(hideCue, 6000);
+  }
+
   function destroy(): void {
     stopConfetti?.();
     stopConfetti = null;
     echoEl.replaceChildren();
+    hideCue(); // the cue's timer lives on window; clear it before the view is discarded
   }
 
-  return { render, nudge, destroy };
+  return { render, nudge, showCue, destroy };
+}
+
+const dot = (): Node => document.createTextNode(" · ");
+function stat(cls: string, text: string): HTMLElement {
+  const el = document.createElement("span");
+  if (cls) el.className = cls;
+  el.textContent = text;
+  return el;
+}
+/** Runtime as whole seconds, e.g. "75 sec" (CSS upper-cases it to match the caption). */
+function formatTime(ms: number): string {
+  return `${Math.max(0, Math.round(ms / 1000))} sec`;
+}
+/**
+ * The end-screen caption, one line: score · runtime · step sets. Score is per-side colour;
+ * runtime and step-sets are muted. Kept on a single line so the footer stays one caption tall.
+ */
+function endStatNodes(score: Score, elapsedMs: number | null, steps: number): Node[] {
+  const nodes: Node[] = [stat("stat-c", `CYAN ${score.cyan}`), dot(), stat("stat-m", `MAGENTA ${score.magenta}`)];
+  if (score.draws > 0) nodes.push(dot(), stat("", `DRAW ${score.draws}`));
+  if (elapsedMs !== null) nodes.push(dot(), stat("", formatTime(elapsedMs)));
+  nodes.push(dot(), stat("", `${steps} step set${steps === 1 ? "" : "s"}`));
+  return nodes;
 }
 
 function tray(p: Player): string {

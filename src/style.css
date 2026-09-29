@@ -1,4 +1,5 @@
-/* Design tokens (dark-first neon). Light theme + full neon polish land in TT-006. */
+/* Design tokens (dark-first neon). Light theme is the daylight variant of the same palette
+   (design.md): deeper accents for contrast on white, gentler glows, dark ink text. */
 :root {
   --fg: #eef2fb;
   --muted: #9aa4bf;
@@ -10,18 +11,76 @@
   --glass-edge: rgba(255, 255, 255, 0.12);
   --page: radial-gradient(110% 80% at 12% -12%, #191d46 0%, transparent 55%),
     radial-gradient(120% 80% at 90% 112%, #3a123f 0%, transparent 52%), #06070f;
+  /* Opaque base colour behind --page, for surfaces that need a readable solid (the cue). */
+  --page-solid: #0b0d1a;
+  /* Text drawn on top of a neon-coloured fill (filled buttons, armed undo). Dark on the
+     bright dark-theme neons; flips to white on light theme's deeper accents. */
+  --ink: #06070f;
   --slide: 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --space: clamp(12px, 2.4dvh, 22px);
   /* The board takes the height left after the fixed sections (top 118 + trays 2×40 +
      padding 32) and the footer. The footer is tallest on the end screen — the step-set
      caption (~18px) + its 10px gap sit above the 44px button — so reserve for that worst
      case (306px) and the board never grows enough to push the button off a short screen. */
-  --board: min(
-    84vw,
-    380px,
-    calc(100dvh - 306px - 4 * var(--space) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+  --board: max(
+    168px,
+    min(
+      84vw,
+      380px,
+      calc(100dvh - 306px - 4 * var(--space) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+    )
   );
   color-scheme: dark;
+}
+
+/* ---- Light theme (daylight variant, auto via OS preference) --------------------- */
+@media (prefers-color-scheme: light) {
+  :root {
+    --fg: #141830;
+    --muted: #5a6480;
+    /* Deeper, saturated accents so the marks and neon headings read on white. */
+    --cyan: #0891b2;
+    --mag: #d61f7a;
+    /* Gentle halos, not the muddy blur bright glows leave on a light page. */
+    --cyan-glow: rgba(8, 145, 178, 0.45);
+    --mag-glow: rgba(214, 31, 122, 0.45);
+    --glass: rgba(20, 24, 48, 0.035);
+    --glass-edge: rgba(20, 24, 48, 0.12);
+    --page: radial-gradient(110% 80% at 12% -12%, #dbeafe 0%, transparent 55%),
+      radial-gradient(120% 80% at 90% 112%, #fce7f3 0%, transparent 52%), #f4f6fb;
+    --page-solid: #ffffff;
+    --ink: #ffffff; /* white text on the deeper accent fills */
+    color-scheme: light;
+  }
+  /* The turn wash is the primary turn cue — keep it legible on white (deeper + a touch stronger). */
+  .wash__layer--cyan {
+    background: radial-gradient(130% 70% at 50% 110%, rgba(8, 145, 178, 0.24), transparent 70%);
+  }
+  .wash__layer--magenta {
+    background: radial-gradient(130% 70% at 50% -10%, rgba(214, 31, 122, 0.22), transparent 70%);
+  }
+  /* Board + cells: dark-tinted surfaces (the white-alpha wells vanish on a light page). */
+  .board {
+    box-shadow: 0 18px 44px rgba(30, 40, 80, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  .cell {
+    border-color: rgba(20, 24, 48, 0.1);
+    background: rgba(20, 24, 48, 0.03);
+  }
+  .cell--win {
+    border-color: rgba(20, 24, 48, 0.45);
+  }
+}
+@media (prefers-color-scheme: light) and (hover: hover) {
+  .cell--open:hover {
+    background: rgba(20, 24, 48, 0.07);
+  }
+  .btn:hover {
+    background-color: rgba(20, 24, 48, 0.06);
+  }
+  .seg__opt:not([aria-checked="true"]):hover {
+    background-color: rgba(20, 24, 48, 0.06);
+  }
 }
 
 * {
@@ -347,10 +406,54 @@ body[data-turn="magenta"] .cell--target::after {
 .cell--nudge {
   animation: nudge 260ms ease;
 }
+/* Twist onboarding cue (FR-U6): a one-time coach mark that floats over the board at the
+   place→move transition. It sits above the board and fades in; taps still reach the cells. */
+.cue {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  transform: translate(-50%, 8px);
+  width: max-content;
+  max-width: min(88vw, 340px);
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--glass-edge);
+  background: var(--page-solid); /* fallback where color-mix is unsupported */
+  background: color-mix(in srgb, var(--page-solid) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px var(--cyan-glow);
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+.cue[hidden] {
+  display: none;
+}
+.cue--in {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
 /* Game over: the board is a display, not a control — cell outlines and wells drop away. */
 body[data-over="true"] .cell {
   border-color: transparent;
   background: transparent;
+}
+/* ...except the winning line, which stays lit as a glowing ring in the winner's colour so the
+   line still reads (this out-specifies the "board is a display" rule just above, which would
+   otherwise blank its outline). The three marks also blaze (see .cell--win .disc). */
+body[data-over="true"][data-turn="cyan"] .cell--win {
+  border-color: var(--cyan);
+  box-shadow: inset 0 0 0 2px var(--cyan), 0 0 22px var(--cyan-glow);
+}
+body[data-over="true"][data-turn="magenta"] .cell--win {
+  border-color: var(--mag);
+  box-shadow: inset 0 0 0 2px var(--mag), 0 0 22px var(--mag-glow);
 }
 /* Trays hide completely (visibility keeps their space, so the board never moves). */
 body[data-over="true"] .tray {
@@ -384,9 +487,21 @@ body[data-over="true"] .tray {
   filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 12px currentColor);
   transition: filter 200ms ease, opacity 300ms ease;
 }
-/* Picked up to move: a white halo makes the selected mark unmistakable. */
+/* Picked up to move: the mark lifts and brightens in its OWN colour. (A white halo washed
+   the mark out to a pale tile — worst in Safari; the colour + a ring on the cell read far
+   better and work on both themes.) */
 .cell--selected .disc {
-  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 7px #fff) drop-shadow(0 0 16px currentColor);
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 16px currentColor);
+}
+/* A glowing ring on the picked-up cell, in the active player's colour — unmistakable. */
+body[data-turn="cyan"] .cell--selected {
+  border-color: var(--cyan);
+  box-shadow: inset 0 0 0 2px var(--cyan), 0 0 18px var(--cyan-glow);
+}
+body[data-turn="magenta"] .cell--selected {
+  border-color: var(--mag);
+  box-shadow: inset 0 0 0 2px var(--mag), 0 0 18px var(--mag-glow);
 }
 /* Winning line: the three marks blaze. */
 .cell--win .disc {
@@ -429,16 +544,29 @@ body[data-over="true"] .tray {
   align-items: center;
   gap: 12px;
 }
-/* Step-set count: quiet caption that appears only on the end screen, above Restart. */
-.stepcount {
+/* End-screen stats — score · runtime · step sets, all on ONE line (a second caption line
+   pushed Play again / Menu off a short screen). `nowrap` + a clamped size keep it one line
+   and shrink it to fit narrow phones rather than wrapping or clipping. */
+.endstats {
   margin: 0;
-  font-size: 13px;
-  letter-spacing: 0.14em;
+  white-space: nowrap;
+  font-size: clamp(10px, 3.2vw, 13px);
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
-.stepcount:empty {
+.endstats:empty {
   display: none;
+}
+.stat-c {
+  color: var(--cyan);
+  text-shadow: 0 0 10px var(--cyan-glow);
+}
+.stat-m {
+  color: var(--mag);
+  text-shadow: 0 0 10px var(--mag-glow);
 }
 .btn {
   min-height: 44px;
@@ -506,7 +634,7 @@ body[data-mode="ai"] .tray__undo {
 }
 [data-action="undo"][data-arm] {
   border-color: transparent;
-  color: #06070f;
+  color: var(--ink);
 }
 [data-action="undo"][data-arm="cyan"] {
   background: var(--cyan);
@@ -532,7 +660,7 @@ body[data-over="true"] .btn:not(.btn--ghost) {
   /* Paint the fill under the border too; otherwise a gradient repeats there and shows as a
      thin opposite-colour line at each end. */
   background-origin: border-box;
-  color: #06070f;
+  color: var(--ink);
   animation: invite 1.6s ease-in-out infinite;
 }
 body[data-over="true"][data-turn="cyan"] .btn:not(.btn--ghost) {
@@ -652,7 +780,7 @@ body[data-over="true"][data-turn="draw"] .btn:not(.btn--ghost) {
   border-color: transparent;
   background-origin: border-box;
   background-image: linear-gradient(90deg, var(--cyan), var(--mag));
-  color: #06070f;
+  color: var(--ink);
   box-shadow: 0 0 22px rgba(45, 226, 255, 0.28), 0 0 22px rgba(255, 79, 178, 0.28);
 }
 
