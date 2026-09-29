@@ -12,7 +12,7 @@ import {
   type Player,
 } from "../engine";
 import { launchConfetti } from "./confetti";
-import { selectableCells, targetCells, type UiState } from "./interaction";
+import { endEffect, selectableCells, targetCells, type UiState } from "./interaction";
 
 const NAME: Record<Player, string> = { cyan: "Cyan", magenta: "Magenta" };
 /** Confetti in the winner's colour, with lighter tints and white for sparkle. */
@@ -43,8 +43,11 @@ export function mountView(
         <p class="status-sub"></p>
       </header>
       ${tray("magenta")}
-      <div class="board" role="group" aria-label="Board">
-        ${Array.from({ length: BOARD_SIZE }, (_, i) => `<button class="cell" type="button" data-cell="${i}"></button>`).join("")}
+      <div class="board-wrap">
+        <div class="echo" aria-hidden="true"></div>
+        <div class="board" role="group" aria-label="Board">
+          ${Array.from({ length: BOARD_SIZE }, (_, i) => `<button class="cell" type="button" data-cell="${i}"></button>`).join("")}
+        </div>
       </div>
       ${tray("cyan")}
       <footer class="bottom">
@@ -57,6 +60,7 @@ export function mountView(
   const statusEl = root.querySelector<HTMLElement>(".status")!;
   const subEl = root.querySelector<HTMLElement>(".status-sub")!;
   const boardEl = root.querySelector<HTMLElement>(".board")!;
+  const echoEl = root.querySelector<HTMLElement>(".echo")!;
   const cells = [...root.querySelectorAll<HTMLButtonElement>(".cell")];
   const trays: Record<Player, HTMLElement> = {
     cyan: root.querySelector<HTMLElement>(".tray--cyan")!,
@@ -119,14 +123,15 @@ export function mountView(
 
     if (shown && ui.lastMove && ui.game !== shown.game) animate(ui);
 
-    // Confetti only on the move that wins — never on re-render or restart.
-    const wasPlaying = shown !== null && status(shown.game).kind === "playing";
-    if (st.kind === "win" && wasPlaying) {
-      stopConfetti?.();
+    const effect = endEffect(shown?.game ?? null, ui.game);
+    if (effect === "confetti" && st.kind === "win") {
       stopConfetti = launchConfetti(CONFETTI[st.player], { reduced: reducedMotion() });
-    } else if (st.kind === "playing") {
+    } else if (effect === "echo") {
+      echo();
+    } else if (effect === "clear") {
       stopConfetti?.();
       stopConfetti = null;
+      echoEl.replaceChildren();
     }
     shown = ui;
   }
@@ -146,6 +151,19 @@ export function mountView(
     disc.getBoundingClientRect(); // commit the start position before transitioning
     disc.classList.add("disc--slide");
     disc.style.transform = "";
+  }
+
+  /** Draw: 3 board-shaped rings ripple out, cyan · magenta · cyan — one per repetition. */
+  function echo(): void {
+    echoEl.replaceChildren();
+    if (reducedMotion()) return; // reduced motion: the still dual glow is the whole effect
+    (["cyan", "magenta", "cyan"] as const).forEach((p, i) => {
+      const ring = document.createElement("span");
+      ring.className = `echo__ring echo__ring--${p}`;
+      ring.style.animationDelay = `${i * 400}ms`;
+      ring.addEventListener("animationend", () => ring.remove());
+      echoEl.append(ring);
+    });
   }
 
   function nudge(cell: number): void {

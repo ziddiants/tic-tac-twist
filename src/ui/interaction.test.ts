@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createInitialState, positionKey, status, type Cell, type GameState, type Player } from "../engine";
-import { initialUi, selectableCells, tap, targetCells, type UiState } from "./interaction";
+import { endEffect, initialUi, selectableCells, tap, targetCells, type UiState } from "./interaction";
 
 // ---- test helpers -----------------------------------------------------------
 function makeState(cyan: number[], magenta: number[], turn: Player): GameState {
@@ -108,5 +108,28 @@ describe("game over", () => {
     for (let i = 0; i < 2; i++) ui = tapAll(ui, [0, 2, 3, 6, 2, 0, 6, 3]);
     expect(status(ui.game)).toEqual({ kind: "draw" });
     expect(tap(ui, 0).kind).toBe("inert");
+  });
+});
+
+// ---- end-of-game effects ----------------------------------------------------
+describe("endEffect", () => {
+  const playing = MOVING().game;
+  const win = tapAll(initialUi(createInitialState()), [0, 3, 1, 4, 2]).game;
+  const draw = (() => {
+    let ui = MOVING();
+    for (let i = 0; i < 2; i++) ui = tapAll(ui, [0, 2, 3, 6, 2, 0, 6, 3]);
+    return ui.game;
+  })();
+
+  it("confetti on the move that wins", () => expect(endEffect(playing, win)).toBe("confetti"));
+  it("echo on the move that draws", () => expect(endEffect(playing, draw)).toBe("echo"));
+  it("nothing when already over (re-render)", () => {
+    expect(endEffect(win, win)).toBeNull();
+    expect(endEffect(draw, draw)).toBeNull();
+  });
+  it("nothing on the first render", () => expect(endEffect(null, draw)).toBeNull());
+  it("clears on a fresh or ongoing game", () => {
+    expect(endEffect(draw, createInitialState())).toBe("clear");
+    expect(endEffect(null, playing)).toBe("clear");
   });
 });

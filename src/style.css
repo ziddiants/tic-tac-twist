@@ -59,9 +59,9 @@ body[data-turn="cyan"] .wash__layer--cyan,
 body[data-turn="magenta"] .wash__layer--magenta {
   opacity: 1;
 }
-/* Draw: both sides glow at half strength. */
+/* Draw: both sides glow together and meet in the middle. */
 body[data-turn="draw"] .wash__layer {
-  opacity: 0.55;
+  opacity: 0.8;
 }
 
 /* ---- Layout: top slot · magenta tray · board · cyan tray · bottom slot -------- */
@@ -78,6 +78,8 @@ body[data-turn="draw"] .wash__layer {
   align-items: center;
   justify-content: center;
   gap: var(--space);
+  /* Effects that grow past the edges (draw echo) must never make the page scroll. */
+  overflow: clip;
   padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   text-align: center;
 }
@@ -137,6 +139,15 @@ body[data-turn="magenta"] .status--declare {
   color: var(--mag);
   text-shadow: 0 0 12px var(--mag-glow);
 }
+/* Draw: lettering fades cyan → magenta. Glow via drop-shadow (a text-shadow would paint
+   over gradient-clipped text). */
+body[data-turn="draw"] .status--declare {
+  color: transparent;
+  background: linear-gradient(90deg, var(--cyan), var(--mag));
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(45, 226, 255, 0.45)) drop-shadow(0 0 8px rgba(255, 79, 178, 0.45));
+}
 
 /* ---- Trays ---------------------------------------------------------------------- */
 .tray {
@@ -182,6 +193,33 @@ body[data-turn="magenta"] .status--declare {
 }
 
 /* ---- Board ---------------------------------------------------------------------- */
+.board-wrap {
+  position: relative;
+  isolation: isolate;
+}
+/* Draw echo: rings sit behind the board, so only the part outside it shows. */
+.echo {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.echo__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  border: 2px solid;
+  opacity: 0;
+  animation: echo 1.2s ease-out both;
+}
+.echo__ring--cyan {
+  border-color: var(--cyan);
+  box-shadow: 0 0 18px var(--cyan-glow), inset 0 0 12px var(--cyan-glow);
+}
+.echo__ring--magenta {
+  border-color: var(--mag);
+  box-shadow: 0 0 18px var(--mag-glow), inset 0 0 12px var(--mag-glow);
+}
 .board {
   width: var(--board);
   aspect-ratio: 1;
@@ -351,6 +389,16 @@ body[data-turn="magenta"] .cell--target::after {
 @keyframes pop {
   from {
     transform: scale(0.3);
+    opacity: 0;
+  }
+}
+@keyframes echo {
+  0% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.35);
     opacity: 0;
   }
 }

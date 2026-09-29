@@ -5,7 +5,7 @@
  * unit-tested on their own. It never re-implements game rules: what is placeable,
  * selectable, or a target is always read from the engine's `legalMoves`.
  */
-import { applyMove, legalMoves, type GameState, type Move } from "../engine";
+import { applyMove, legalMoves, status, type GameState, type Move } from "../engine";
 
 export interface UiState {
   readonly game: GameState;
@@ -67,4 +67,17 @@ export function tap(ui: UiState, cell: number): TapResult {
 
 function moved(ui: UiState, move: Move): TapResult {
   return { kind: "moved", ui: { game: applyMove(ui.game, move), selected: null, lastMove: move } };
+}
+
+export type EndEffect = "confetti" | "echo" | "clear" | null;
+
+/**
+ * Which end-of-game effect a render should trigger. Fires only on the move that ends the
+ * game (never on the first render or a re-render); a fresh game clears any running effect.
+ */
+export function endEffect(prev: GameState | null, next: GameState): EndEffect {
+  const now = status(next).kind;
+  if (now === "playing") return "clear";
+  if (prev === null || status(prev).kind !== "playing") return null;
+  return now === "win" ? "confetti" : "echo";
 }
