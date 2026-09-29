@@ -96,7 +96,9 @@ export function mountView(
       const t = trays[p];
       t.classList.toggle("tray--active", st.kind === "playing" && turn === p);
       t.querySelectorAll(".tray__disc").forEach((d, i) => d.classList.toggle("is-spent", i >= left));
-      t.querySelector(".tray__label")!.textContent = left > 0 ? `${left} left` : "moving";
+      // Once the game is over the trays have nothing to say ("moving" would invite a tap).
+      t.querySelector(".tray__label")!.textContent =
+        st.kind !== "playing" ? "" : left > 0 ? `${left} left` : "moving";
     }
 
     cells.forEach((el, i) => {
@@ -153,7 +155,10 @@ export function mountView(
     disc.style.transform = "";
   }
 
-  /** Draw: 3 board-shaped rings ripple out, cyan · magenta · cyan — one per repetition. */
+  /**
+   * Draw: 3 board-shaped rings ripple out, cyan · magenta · cyan — one per repetition —
+   * and repeat until Restart so the moment can't be missed.
+   */
   function echo(): void {
     echoEl.replaceChildren();
     if (reducedMotion()) return; // reduced motion: the still dual glow is the whole effect
@@ -161,7 +166,6 @@ export function mountView(
       const ring = document.createElement("span");
       ring.className = `echo__ring echo__ring--${p}`;
       ring.style.animationDelay = `${i * 400}ms`;
-      ring.addEventListener("animationend", () => ring.remove());
       echoEl.append(ring);
     });
   }

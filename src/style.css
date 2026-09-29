@@ -105,6 +105,13 @@ body[data-turn="draw"] .wash__layer {
   color: var(--mag);
   text-shadow: 0 0 10px var(--mag-glow), 0 0 24px var(--mag-glow);
 }
+/* Game over: the wordmark steps back so the result is the headline. The transition lives
+   only on this state, so load/resize/rotation never animate the wordmark's size. */
+body[data-over="true"] .wordmark {
+  font-size: clamp(14px, 4.2vw, 20px);
+  opacity: 0.5;
+  transition: font-size 300ms ease, opacity 300ms ease;
+}
 .status {
   margin: 0;
   line-height: 1.3;
@@ -124,29 +131,37 @@ body[data-turn="draw"] .wash__layer {
   display: none;
 }
 /* End of game: the status line becomes the declaration . */
+/* End of game: the status line becomes the declaration. It keeps glowing (breathing) the
+   whole time so it never reads as part of the wordmark. The glow is a drop-shadow filter so
+   it also works on the gradient-clipped DRAW text. */
 .status--declare {
+  --glow-a: var(--cyan-glow);
+  --glow-b: var(--cyan-glow);
   font-family: "Monoton", system-ui;
   font-weight: 400;
-  font-size: clamp(22px, 7vw, 34px);
+  font-size: clamp(24px, 8.5vw, 40px);
   line-height: 1.15;
   text-transform: uppercase;
+  filter: drop-shadow(0 0 6px var(--glow-a)) drop-shadow(0 0 16px var(--glow-b));
+  animation: breathe 2.4s ease-in-out infinite;
 }
 body[data-turn="cyan"] .status--declare {
   color: var(--cyan);
-  text-shadow: 0 0 12px var(--cyan-glow);
 }
 body[data-turn="magenta"] .status--declare {
+  --glow-a: var(--mag-glow);
+  --glow-b: var(--mag-glow);
   color: var(--mag);
-  text-shadow: 0 0 12px var(--mag-glow);
 }
 /* Draw: lettering fades cyan → magenta. Glow via drop-shadow (a text-shadow would paint
    over gradient-clipped text). */
 body[data-turn="draw"] .status--declare {
+  --glow-a: var(--cyan-glow);
+  --glow-b: var(--mag-glow);
   color: transparent;
   background: linear-gradient(90deg, var(--cyan), var(--mag));
   -webkit-background-clip: text;
   background-clip: text;
-  filter: drop-shadow(0 0 8px rgba(45, 226, 255, 0.45)) drop-shadow(0 0 8px rgba(255, 79, 178, 0.45));
 }
 
 /* ---- Trays ---------------------------------------------------------------------- */
@@ -210,7 +225,7 @@ body[data-turn="draw"] .status--declare {
   border-radius: 22px;
   border: 2px solid;
   opacity: 0;
-  animation: echo 1.2s ease-out both;
+  animation: echo 2.4s ease-out infinite both;
 }
 .echo__ring--cyan {
   border-color: var(--cyan);
@@ -301,6 +316,14 @@ body[data-turn="magenta"] .cell--target::after {
 .cell--nudge {
   animation: nudge 260ms ease;
 }
+/* Game over: the board is a display, not a control — cell outlines and wells drop away. */
+body[data-over="true"] .cell {
+  border-color: transparent;
+  background: transparent;
+}
+body[data-over="true"] .tray {
+  opacity: 0.3;
+}
 
 /* ---- Discs ---------------------------------------------------------------------- */
 .disc {
@@ -369,6 +392,32 @@ body[data-turn="magenta"] .cell--target::after {
   text-transform: uppercase;
   cursor: pointer;
 }
+@media (hover: hover) {
+  .btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+.btn:active {
+  transform: scale(0.97);
+}
+/* Game over: Restart is the one thing to do next — filled, glowing, gently pulsing. */
+body[data-over="true"] .btn {
+  border-color: transparent;
+  color: #06070f;
+  animation: invite 1.6s ease-in-out infinite;
+}
+body[data-over="true"][data-turn="cyan"] .btn {
+  background: var(--cyan);
+  box-shadow: 0 0 22px var(--cyan-glow);
+}
+body[data-over="true"][data-turn="magenta"] .btn {
+  background: var(--mag);
+  box-shadow: 0 0 22px var(--mag-glow);
+}
+body[data-over="true"][data-turn="draw"] .btn {
+  background: linear-gradient(90deg, var(--cyan), var(--mag));
+  box-shadow: -8px 0 22px var(--cyan-glow), 8px 0 22px var(--mag-glow);
+}
 .btn:focus-visible {
   outline: 2px solid var(--fg);
   outline-offset: 2px;
@@ -392,14 +441,26 @@ body[data-turn="magenta"] .cell--target::after {
     opacity: 0;
   }
 }
+/* Ripple out over the first half, rest for the second half, repeat. */
 @keyframes echo {
   0% {
     transform: scale(1);
     opacity: 0.95;
   }
+  50%,
   100% {
     transform: scale(1.35);
     opacity: 0;
+  }
+}
+@keyframes breathe {
+  50% {
+    filter: drop-shadow(0 0 10px var(--glow-a)) drop-shadow(0 0 28px var(--glow-b));
+  }
+}
+@keyframes invite {
+  50% {
+    transform: scale(1.05);
   }
 }
 @keyframes nudge {

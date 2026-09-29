@@ -89,14 +89,21 @@ Two use cases: (a) two people on one phone; (b) one person vs a beatable-but-sma
   - **Center:** board stays visible — winning line glows through the 3 pieces, board frame
     glows in the winner's color, losing pieces dim.
   - **Bottom:** round counter (games/score) + **Play again** button.
-  - **Confetti** over the entire screen, on the top-most layer.
+  - **Confetti** over the entire screen, on the top-most layer — opening burst, then a
+    gentle rain that **keeps falling until Restart** (fixed piece pool, never grows).
+  - **Game-over state reads as finished (both win and draw):** the wordmark steps back
+    (smaller, dimmer) so the declaration is the headline; the declaration **glows
+    continuously** (breathing); cell outlines and tray labels drop away so the board no
+    longer looks tappable; **Restart becomes the primary button** (filled in the result's
+    colour, gently pulsing). During play Restart stays low-key.
   - Implementation note: confetti canvas must sit ABOVE all UI; do NOT use a dark modal
     backdrop that covers the board (mockup v2 bug).
   - **Draw (same layout as a win — gets its own declaration moment):** top slot "DRAW"
     (neon, split cyan→magenta) + small "Position repeated 3 times"; board stays visible;
     round counter + Play again at the bottom. **No confetti** — the **echo** instead
     (approved by Adwitya 2026-09-29, built in TT-004): both washes glow together, 3
-    board-shaped rings ripple out cyan · magenta · cyan (one per repetition), no pieces dim.
+    board-shaped rings ripple out cyan · magenta · cyan (one per repetition), **repeating
+    until Restart** so it can't be missed; no pieces dim.
     Reduced-motion: static dual glow, no rings.
 - FR-U6. Twist onboarding: on a player's 3rd placement, a one-time cue (first game only).
 - FR-U7. `prefers-reduced-motion` ⇒ animations become instant; confetti reduced to a
