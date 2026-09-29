@@ -1,0 +1,64 @@
+/* Design tokens (dark-first neon). The real game UI is built from these starting at TT-004.
+   This file currently styles only the scaffold placeholder shell. */
+:root {
+  --fg: #eef2fb;
+  --muted: #9aa4bf;
+  --cyan: #2de2ff;
+  --mag: #ff4fb2;
+  --cyan-glow: rgba(45, 226, 255, 0.78);
+  --mag-glow: rgba(255, 79, 178, 0.78);
+  --page: radial-gradient(110% 80% at 12% -12%, #191d46 0%, transparent 55%),
+    radial-gradient(120% 80% at 90% 112%, #3a123f 0%, transparent 52%), #06070f;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: "Chakra Petch", system-ui, -apple-system, sans-serif;
+  color: var(--fg);
+  background: var(--page);
+}
+
+#app {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+}
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+.wordmark {
+  font-family: "Monoton", system-ui;
+  font-size: clamp(28px, 9vw, 52px);
+  line-height: 1;
+  color: var(--cyan);
+  text-shadow: 0 0 12px var(--cyan-glow), 0 0 30px var(--cyan-glow);
+}
+.wordmark .b {
+  color: var(--mag);
+  text-shadow: 0 0 12px var(--mag-glow), 0 0 30px var(--mag-glow);
+}
+.tagline {
+  color: var(--muted);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+.note {
+  color: var(--muted);
+  font-size: 13px;
+  max-width: 34ch;
+  line-height: 1.5;
+}
