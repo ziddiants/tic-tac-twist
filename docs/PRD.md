@@ -89,10 +89,22 @@ Two use cases: (a) two people on one phone; (b) one person vs a beatable-but-sma
   - **Center:** board stays visible — winning line glows through the 3 pieces, board frame
     glows in the winner's color, losing pieces dim.
   - **Bottom:** round counter (games/score) + **Play again** button.
-  - **Confetti** over the entire screen, on the top-most layer.
+  - **Confetti** over the entire screen, on the top-most layer — opening burst, then a
+    gentle rain that **keeps falling until Restart** (fixed piece pool, never grows).
+  - **Game-over state reads as finished (both win and draw):** the wordmark steps back
+    (smaller, dimmer) so the declaration is the headline; the declaration **glows
+    continuously** (breathing); cell outlines and tray labels drop away so the board no
+    longer looks tappable; **Restart becomes the primary button** (filled in the result's
+    colour, gently pulsing). During play Restart stays low-key.
   - Implementation note: confetti canvas must sit ABOVE all UI; do NOT use a dark modal
     backdrop that covers the board (mockup v2 bug).
-  - **Draw:** "Draw — repeated position" in the top slot, no confetti, Play again below.
+  - **Draw (same layout as a win — gets its own declaration moment):** top slot "DRAW"
+    (neon, split cyan→magenta) + small "Position repeated 3 times"; board stays visible;
+    round counter + Play again at the bottom. **No confetti** — the **echo** instead
+    (approved by Adwitya 2026-09-29, built in TT-004): both washes glow together, 3
+    board-shaped rings ripple out cyan · magenta · cyan (one per repetition), **repeating
+    until Restart** so it can't be missed; no pieces dim.
+    Reduced-motion: static dual glow, no rings.
 - FR-U6. Twist onboarding: on a player's 3rd placement, a one-time cue (first game only).
 - FR-U7. `prefers-reduced-motion` ⇒ animations become instant; confetti reduced to a
   single small burst.
@@ -129,7 +141,7 @@ dark; provide a daylight/light variant of the same palette). Neon-tube display f
 | **TT-001** | Scaffold Vite+TS project | `npm run dev` serves the neon shell; `npm test` runs; build green; committed | — (done) |
 | **TT-002** | Engine + unit tests | FR-E1..E7; tests cover both phases, win in each phase, win-before-draw, threefold-repetition draw, illegal-move rejection, "always a legal move" | TT-001 |
 | **TT-003** | Solver + AI + tests | FR-A1..A3; a test asserts the known game values (free=draw; adjacent+center=win) to prove correctness; Hard never loses in self-play | TT-002 |
-| **TT-004** | Board UI + interaction | FR-U1..U4; tap-to-place, tap-to-move with target highlighting + slide, turn-color wash; hot-seat fully playable | TT-002 |
+| **TT-004** | Board UI + interaction | FR-U1..U4; tap-to-place, tap-to-move with target highlighting + slide, turn-color wash; hot-seat fully playable. **+ win confetti + draw echo** (FR-U5, pulled forward from TT-006 at Adwitya's request, 2026-09-29) | TT-002 |
 | **TT-005** | Setup + AI wiring + rematch | FR-S1..S3; choose mode/difficulty/side; AI plays; Play again swaps sides + rounds | TT-003, TT-004 |
 | **TT-006** | Neon polish + win celebration | FR-U5, FR-U6, FR-U7; full visual pass, win declaration + confetti (board stays visible), onboarding cue, reduced-motion, light/dark | TT-004, TT-005 |
 | **TT-007** | Ship | Static build; deploy to a link; smoke-test the full flow end-to-end on a phone | TT-006 |

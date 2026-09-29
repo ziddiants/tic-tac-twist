@@ -10,6 +10,7 @@ import {
   positionKey,
   status,
   winner,
+  winningLine,
   type Board,
   type Cell,
   type GameState,
@@ -96,6 +97,11 @@ describe("winning", () => {
     ]);
     expect(status(s)).toEqual({ kind: "win", player: "cyan" });
     expect(winner(s.board)).toBe("cyan");
+    expect(winningLine(s.board)).toEqual([0, 1, 2]);
+  });
+
+  it("has no winning line while no line is complete", () => {
+    expect(winningLine(makeBoard([0, 1], [3, 4]))).toBeNull();
   });
 
   it("detects a win formed during the movement phase", () => {

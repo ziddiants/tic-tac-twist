@@ -90,13 +90,20 @@ export function createInitialState(first: Player = "cyan"): GameState {
   return { board, turn: first, history: [positionKey(board, first)] };
 }
 
-/** The player who owns a completed line, or null. (Only the mover can complete a line.) */
-export function winner(board: Board): Player | null {
-  for (const [a, b, c] of LINES) {
+/** The completed line (3 cell indexes), or null. */
+export function winningLine(board: Board): readonly [number, number, number] | null {
+  for (const line of LINES) {
+    const [a, b, c] = line;
     const v = board[a];
-    if (v !== null && v === board[b] && v === board[c]) return v;
+    if (v !== null && v === board[b] && v === board[c]) return line;
   }
   return null;
+}
+
+/** The player who owns a completed line, or null. (Only the mover can complete a line.) */
+export function winner(board: Board): Player | null {
+  const line = winningLine(board);
+  return line === null ? null : board[line[0]];
 }
 
 /** How many times the current position (board + side to move) has occurred this game. */
