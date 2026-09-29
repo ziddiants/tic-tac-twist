@@ -13,11 +13,13 @@
   --slide: 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --space: clamp(12px, 2.4dvh, 22px);
   /* The board takes the height left after the fixed sections (top 118 + trays 2×40 +
-     button 44 + padding 32 = 274px, plus 4 gaps and any notch insets). */
+     padding 32) and the footer. The footer is tallest on the end screen — the step-set
+     caption (~18px) + its 10px gap sit above the 44px button — so reserve for that worst
+     case (306px) and the board never grows enough to push the button off a short screen. */
   --board: min(
     84vw,
     380px,
-    calc(100dvh - 274px - 4 * var(--space) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
+    calc(100dvh - 306px - 4 * var(--space) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
   );
   color-scheme: dark;
 }
