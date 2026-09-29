@@ -18,8 +18,6 @@ import type { GameMode } from "./series";
 
 /** Extra display context for a render, beyond the live game/undo state. */
 export interface RenderCtx {
-  /** 1-indexed round number in the current series (shown on the end screen). */
-  readonly round: number;
   readonly mode: GameMode;
   /** The side the computer plays (vs-AI), else null — drives the "thinking" label. */
   readonly aiSide: Player | null;
@@ -158,13 +156,12 @@ export function mountView(
     else delete undoBtn.dataset.arm;
     undoBtn.textContent = mover ? `↺ Undo · ${match.undosLeft[mover]}` : "↺ Undo";
 
-    // End-screen caption only: round number + step-set count, folded into one line so the
-    // footer height (and the board-height budget that reserves for it) never changes.
+    // Step-set count belongs to the end screen only (right above Play again).
     if (st.kind === "playing") {
       stepcountEl.textContent = "";
     } else {
       const n = stepSets(ui.game);
-      stepcountEl.textContent = `Round ${ctx.round} · ${n} step set${n === 1 ? "" : "s"}`;
+      stepcountEl.textContent = `${n} step set${n === 1 ? "" : "s"}`;
     }
 
     cells.forEach((el, i) => {

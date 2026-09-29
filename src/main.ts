@@ -33,7 +33,7 @@ if (app) {
   const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function ctx(): RenderCtx {
-    return { round: series!.round, mode: series!.config.mode, aiSide: aiSide(series!.config) };
+    return { mode: series!.config.mode, aiSide: aiSide(series!.config) };
   }
 
   /** Render the current match, then hand the turn to the computer if it's its move. */
