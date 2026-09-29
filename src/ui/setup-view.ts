@@ -20,11 +20,14 @@ function seg<T extends string>(
         `<button type="button" class="seg__opt" role="radio" data-name="${name}" data-value="${o.value}" aria-checked="${o.value === selected}">${o.text}</button>`,
     )
     .join("");
+  // A plain div, not <fieldset>/<legend>: WebKit renders <legend> as the fieldset caption
+  // outside the flex flow, so `gap` never spaces it from the pills. The radiogroup carries
+  // the accessible name via aria-label.
   return `
-    <fieldset class="opt">
-      <legend>${label}</legend>
+    <div class="opt">
+      <span class="opt__label">${label}</span>
       <div class="seg" role="radiogroup" aria-label="${label}">${pills}</div>
-    </fieldset>`;
+    </div>`;
 }
 
 export function mountSetup(root: HTMLElement, handlers: { onStart(config: GameConfig): void }): void {
@@ -37,9 +40,9 @@ export function mountSetup(root: HTMLElement, handlers: { onStart(config: GameCo
       <div class="wordmark">TIC<span class="b">·</span>TAC<span class="b">·</span>TWIST</div>
       <p class="setup__tag">Place 3, then move. Line up 3 to win.</p>
       <form class="setup__form">
-        ${seg<GameMode>("Players", "mode", [
-          { value: "hotseat", text: "2 Players" },
-          { value: "ai", text: "vs Computer" },
+        ${seg<GameMode>("Game Mode", "mode", [
+          { value: "hotseat", text: "vs Friend" },
+          { value: "ai", text: "vs AI" },
         ], mode)}
         <div class="setup__ai" hidden>
           ${seg<Difficulty>("Difficulty", "difficulty", [

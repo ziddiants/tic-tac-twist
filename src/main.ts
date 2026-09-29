@@ -71,6 +71,7 @@ if (app) {
 
   function beginSeries(config: GameConfig): void {
     clearAiTimer();
+    view?.destroy(); // stop any confetti still running before this view is replaced
     series = startSeries(config);
     view = mountView(app!, {
       onTap(cell) {
@@ -102,6 +103,7 @@ if (app) {
 
   function toSetup(): void {
     clearAiTimer();
+    view?.destroy(); // Menu from a win screen: stop the confetti before it rains onto setup
     series = null;
     match = null;
     view = null;

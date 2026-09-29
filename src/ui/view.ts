@@ -36,6 +36,9 @@ export interface View {
   render(match: MatchState, ctx: RenderCtx): void;
   /** Brief shake on a cell whose tap did nothing. */
   nudge(cell: number): void;
+  /** Tear down before the view is discarded: stop any confetti (its canvas lives on
+   *  document.body, so replacing the root won't remove it) and clear the echo. */
+  destroy(): void;
 }
 
 export function mountView(
@@ -241,7 +244,13 @@ export function mountView(
     el.classList.add("cell--nudge");
   }
 
-  return { render, nudge };
+  function destroy(): void {
+    stopConfetti?.();
+    stopConfetti = null;
+    echoEl.replaceChildren();
+  }
+
+  return { render, nudge, destroy };
 }
 
 function tray(p: Player): string {

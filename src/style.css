@@ -441,8 +441,16 @@ body[data-over="true"] .tray {
   cursor: pointer;
 }
 @media (hover: hover) {
+  /* background-COLOR, not the shorthand: the shorthand resets background-image, which would
+     blank out the gradient/filled buttons (Start, Play again) on hover. */
   .btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  /* Filled buttons keep their fill (an opaque background-image hides the overlay); brighten
+     them instead so hover still reads. */
+  .setup__start:hover,
+  body[data-over="true"] .btn:not(.btn--ghost):hover {
+    filter: brightness(1.08);
   }
 }
 .btn:active {
@@ -514,11 +522,13 @@ body[data-over="true"] .btn:not(.btn--ghost) {
   animation: invite 1.6s ease-in-out infinite;
 }
 body[data-over="true"][data-turn="cyan"] .btn:not(.btn--ghost) {
-  background: var(--cyan);
+  /* background-image (solid), not the colour: an opaque image hides the hover overlay so the
+     fill survives :hover (see the .btn:hover note). */
+  background-image: linear-gradient(var(--cyan), var(--cyan));
   box-shadow: 0 0 22px var(--cyan-glow);
 }
 body[data-over="true"][data-turn="magenta"] .btn:not(.btn--ghost) {
-  background: var(--mag);
+  background-image: linear-gradient(var(--mag), var(--mag));
   box-shadow: 0 0 22px var(--mag-glow);
 }
 body[data-over="true"][data-turn="draw"] .btn:not(.btn--ghost) {
@@ -565,15 +575,11 @@ body[data-over="true"][data-turn="draw"] .btn:not(.btn--ghost) {
   display: none;
 }
 .opt {
-  margin: 0;
-  padding: 0;
-  border: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
-.opt legend {
-  padding: 0;
+.opt__label {
   font-size: 12px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -598,8 +604,8 @@ body[data-over="true"][data-turn="draw"] .btn:not(.btn--ghost) {
   transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease, color 200ms ease;
 }
 @media (hover: hover) {
-  .seg__opt:hover {
-    background: rgba(255, 255, 255, 0.09);
+  .seg__opt:not([aria-checked="true"]):hover {
+    background-color: rgba(255, 255, 255, 0.09);
   }
 }
 .seg__opt:focus-visible {
