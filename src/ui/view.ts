@@ -11,9 +11,15 @@ import {
   winningLine,
   type Player,
 } from "../engine";
+import { launchConfetti } from "./confetti";
 import { selectableCells, targetCells, type UiState } from "./interaction";
 
 const NAME: Record<Player, string> = { cyan: "Cyan", magenta: "Magenta" };
+/** Confetti in the winner's colour, with lighter tints and white for sparkle. */
+const CONFETTI: Record<Player, readonly string[]> = {
+  cyan: ["#2de2ff", "#2de2ff", "#8ff1ff", "#d8fbff", "#ffffff"],
+  magenta: ["#ff4fb2", "#ff4fb2", "#ff8fcd", "#ffd6ec", "#ffffff"],
+};
 
 export interface View {
   render(ui: UiState): void;
@@ -64,6 +70,7 @@ export function mountView(
   root.querySelector('[data-action="restart"]')!.addEventListener("click", handlers.onRestart);
 
   let shown: UiState | null = null;
+  let stopConfetti: (() => void) | null = null;
 
   function render(ui: UiState): void {
     const { board, turn } = ui.game;
@@ -111,6 +118,16 @@ export function mountView(
     });
 
     if (shown && ui.lastMove && ui.game !== shown.game) animate(ui);
+
+    // Confetti only on the move that wins — never on re-render or restart.
+    const wasPlaying = shown !== null && status(shown.game).kind === "playing";
+    if (st.kind === "win" && wasPlaying) {
+      stopConfetti?.();
+      stopConfetti = launchConfetti(CONFETTI[st.player], { reduced: reducedMotion() });
+    } else if (st.kind === "playing") {
+      stopConfetti?.();
+      stopConfetti = null;
+    }
     shown = ui;
   }
 

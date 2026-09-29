@@ -134,7 +134,7 @@ dark; provide a daylight/light variant of the same palette). Neon-tube display f
 | **TT-001** | Scaffold Vite+TS project | `npm run dev` serves the neon shell; `npm test` runs; build green; committed | — (done) |
 | **TT-002** | Engine + unit tests | FR-E1..E7; tests cover both phases, win in each phase, win-before-draw, threefold-repetition draw, illegal-move rejection, "always a legal move" | TT-001 |
 | **TT-003** | Solver + AI + tests | FR-A1..A3; a test asserts the known game values (free=draw; adjacent+center=win) to prove correctness; Hard never loses in self-play | TT-002 |
-| **TT-004** | Board UI + interaction | FR-U1..U4; tap-to-place, tap-to-move with target highlighting + slide, turn-color wash; hot-seat fully playable | TT-002 |
+| **TT-004** | Board UI + interaction | FR-U1..U4; tap-to-place, tap-to-move with target highlighting + slide, turn-color wash; hot-seat fully playable. **+ win confetti** (FR-U5, pulled forward from TT-006 at Adwitya's request, 2026-09-29) | TT-002 |
 | **TT-005** | Setup + AI wiring + rematch | FR-S1..S3; choose mode/difficulty/side; AI plays; Play again swaps sides + rounds | TT-003, TT-004 |
 | **TT-006** | Neon polish + win celebration | FR-U5, FR-U6, FR-U7; full visual pass, win declaration + confetti (board stays visible), onboarding cue, reduced-motion, light/dark | TT-004, TT-005 |
 | **TT-007** | Ship | Static build; deploy to a link; smoke-test the full flow end-to-end on a phone | TT-006 |
