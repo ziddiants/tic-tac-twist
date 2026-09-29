@@ -544,39 +544,29 @@ body[data-turn="magenta"] .cell--selected {
   align-items: center;
   gap: 12px;
 }
-/* Running score (OQ3): the headline caption on the end screen — each side in its own neon. */
-.scoreline {
+/* End-screen stats — score · runtime · step sets, all on ONE line (a second caption line
+   pushed Play again / Menu off a short screen). `nowrap` + a clamped size keep it one line
+   and shrink it to fit narrow phones rather than wrapping or clipping. */
+.endstats {
   margin: 0;
-  font-size: 15px;
+  white-space: nowrap;
+  font-size: clamp(10px, 3.2vw, 13px);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
+  color: var(--muted);
 }
-.scoreline:empty {
+.endstats:empty {
   display: none;
 }
-.scoreline__c {
+.stat-c {
   color: var(--cyan);
   text-shadow: 0 0 10px var(--cyan-glow);
 }
-.scoreline__m {
+.stat-m {
   color: var(--mag);
   text-shadow: 0 0 10px var(--mag-glow);
-}
-.scoreline__d {
-  color: var(--muted);
-}
-/* Step-set count: quiet caption that appears only on the end screen, above Restart. */
-.stepcount {
-  margin: 0;
-  font-size: 13px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.stepcount:empty {
-  display: none;
 }
 .btn {
   min-height: 44px;

@@ -23,6 +23,8 @@ export interface RenderCtx {
   readonly aiSide: Player | null;
   /** Running series score, shown on the end screen (OQ3). */
   readonly score: Score;
+  /** The finished game's runtime in ms (null while playing); shown on the end screen. */
+  readonly elapsedMs: number | null;
 }
 
 const NAME: Record<Player, string> = { cyan: "Cyan", magenta: "Magenta" };
@@ -86,8 +88,7 @@ export function mountView(
       </div>
       ${tray("cyan")}
       <footer class="bottom">
-        <p class="scoreline" aria-live="polite"></p>
-        <p class="stepcount" aria-live="polite"></p>
+        <p class="endstats" aria-live="polite"></p>
         <div class="bottom__actions">
           <button class="btn btn--ghost" type="button" data-action="undo">↺ Undo</button>
           <button class="btn" type="button" data-action="restart">Restart</button>
@@ -104,8 +105,7 @@ export function mountView(
   const boardEl = root.querySelector<HTMLElement>(".board")!;
   const echoEl = root.querySelector<HTMLElement>(".echo")!;
   const cueEl = root.querySelector<HTMLElement>(".cue")!;
-  const scorelineEl = root.querySelector<HTMLElement>(".scoreline")!;
-  const stepcountEl = root.querySelector<HTMLElement>(".stepcount")!;
+  const endstatsEl = root.querySelector<HTMLElement>(".endstats")!;
   const undoBtn = root.querySelector<HTMLButtonElement>('[data-action="undo"]')!;
   const cells = [...root.querySelectorAll<HTMLButtonElement>(".cell")];
   const trays: Record<Player, HTMLElement> = {
@@ -177,14 +177,12 @@ export function mountView(
     if (armed && mover) undoBtn.dataset.arm = mover;
     else delete undoBtn.dataset.arm;
 
-    // Running score + step-set count belong to the end screen only (above Play again).
+    // End-screen stats, all on one line so the footer stays a single caption tall (a second
+    // line pushed Play again / Menu off a short screen): score · runtime · step sets.
     if (st.kind === "playing") {
-      scorelineEl.replaceChildren();
-      stepcountEl.textContent = "";
+      endstatsEl.replaceChildren();
     } else {
-      scorelineEl.replaceChildren(...scoreNodes(ctx.score));
-      const n = stepSets(ui.game);
-      stepcountEl.textContent = `${n} step set${n === 1 ? "" : "s"}`;
+      endstatsEl.replaceChildren(...endStatNodes(ctx.score, ctx.elapsedMs, stepSets(ui.game)));
       hideCue(); // the game is over — the onboarding cue has no place here
     }
 
@@ -289,23 +287,26 @@ export function mountView(
   return { render, nudge, showCue, destroy };
 }
 
-/** Coloured score for the end screen: "CYAN n · MAGENTA n", plus draws when there are any. */
-function scoreNodes(score: Score): Node[] {
-  const chip = (cls: string, label: string, n: number): HTMLElement => {
-    const el = document.createElement("span");
-    el.className = cls;
-    el.textContent = `${label} ${n}`;
-    return el;
-  };
-  const sep = (): Node => document.createTextNode(" · ");
-  const nodes: Node[] = [
-    chip("scoreline__c", "CYAN", score.cyan),
-    sep(),
-    chip("scoreline__m", "MAGENTA", score.magenta),
-  ];
-  if (score.draws > 0) {
-    nodes.push(sep(), chip("scoreline__d", "DRAW", score.draws));
-  }
+const dot = (): Node => document.createTextNode(" · ");
+function stat(cls: string, text: string): HTMLElement {
+  const el = document.createElement("span");
+  if (cls) el.className = cls;
+  el.textContent = text;
+  return el;
+}
+/** Runtime as whole seconds, e.g. "75 sec" (CSS upper-cases it to match the caption). */
+function formatTime(ms: number): string {
+  return `${Math.max(0, Math.round(ms / 1000))} sec`;
+}
+/**
+ * The end-screen caption, one line: score · runtime · step sets. Score is per-side colour;
+ * runtime and step-sets are muted. Kept on a single line so the footer stays one caption tall.
+ */
+function endStatNodes(score: Score, elapsedMs: number | null, steps: number): Node[] {
+  const nodes: Node[] = [stat("stat-c", `CYAN ${score.cyan}`), dot(), stat("stat-m", `MAGENTA ${score.magenta}`)];
+  if (score.draws > 0) nodes.push(dot(), stat("", `DRAW ${score.draws}`));
+  if (elapsedMs !== null) nodes.push(dot(), stat("", formatTime(elapsedMs)));
+  nodes.push(dot(), stat("", `${steps} step set${steps === 1 ? "" : "s"}`));
   return nodes;
 }
 

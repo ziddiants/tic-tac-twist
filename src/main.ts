@@ -35,17 +35,26 @@ if (app) {
   // can't double-count). The twist cue (FR-U6) shows once per series, first game only.
   let roundScored = false;
   let cueShown = false;
+  // Game runtime: started when the board is dealt, frozen at the move that ends the game.
+  let roundStartMs = 0;
+  let roundElapsedMs: number | null = null;
 
   const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function ctx(): RenderCtx {
-    return { mode: series!.config.mode, aiSide: aiSide(series!.config), score: series!.score };
+    return {
+      mode: series!.config.mode,
+      aiSide: aiSide(series!.config),
+      score: series!.score,
+      elapsedMs: roundElapsedMs,
+    };
   }
 
-  /** Record a finished game into the running score, exactly once per round. */
+  /** Record a finished game into the running score + freeze its runtime, once per round. */
   function scoreIfOver(): void {
     if (roundScored || !series || !match || !isGameOver(match.ui.game)) return;
     series = recordOutcome(series, match.ui.game);
+    roundElapsedMs = Date.now() - roundStartMs;
     roundScored = true;
   }
 
@@ -93,6 +102,8 @@ if (app) {
   function startRound(): void {
     match = newMatch(createInitialState(firstPlayerForRound(series!.round)));
     roundScored = false; // a fresh board is unscored until it ends
+    roundStartMs = Date.now();
+    roundElapsedMs = null;
     draw();
   }
 
