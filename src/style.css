@@ -438,6 +438,7 @@ body[data-over="true"] .tray {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  white-space: nowrap; /* pill buttons stay one line on narrow phones */
   cursor: pointer;
 }
 @media (hover: hover) {

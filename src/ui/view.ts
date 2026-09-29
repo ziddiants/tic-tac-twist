@@ -150,11 +150,12 @@ export function mountView(
     }
 
     // Undo button: enabled only while a take-back is legal (see session.canUndo). When armed
-    // it takes the last mover's colour — note that is the opposite side to the turn wash.
+    // it takes the last mover's colour — note that is the opposite side to the turn wash. The
+    // remaining-count lives on the tray pills, so the button label stays a plain "↺ Undo"
+    // (a "· N" suffix wrapped to three lines on a narrow phone).
     undoBtn.disabled = !armed;
     if (armed && mover) undoBtn.dataset.arm = mover;
     else delete undoBtn.dataset.arm;
-    undoBtn.textContent = mover ? `↺ Undo · ${match.undosLeft[mover]}` : "↺ Undo";
 
     // Step-set count belongs to the end screen only (right above Play again).
     if (st.kind === "playing") {
